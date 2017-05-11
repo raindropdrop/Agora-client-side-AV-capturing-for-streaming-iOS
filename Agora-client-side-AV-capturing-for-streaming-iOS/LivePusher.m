@@ -138,9 +138,7 @@
                  width:(int)width height:(int)height
               rotation:(int)rotation
 {
-    dispatch_async([LivePusher sharedQueue], ^{
-        [[self sharedPusher] addRemoteOfUId:uid yBuffer:yBuffer uBuffer:uBuffer vBuffer:vBuffer yStride:yStride uStride:uStride vStride:vStride width:width height:height rotation:rotation];
-    });
+    [[self sharedPusher] addRemoteOfUId:uid yBuffer:yBuffer uBuffer:uBuffer vBuffer:vBuffer yStride:yStride uStride:uStride vStride:vStride width:width height:height rotation:rotation];
 }
 
 - (void)addLocalYBuffer:(void *)yBuffer uBuffer:(void *)uBuffer vBuffer:(void *)vBuffer

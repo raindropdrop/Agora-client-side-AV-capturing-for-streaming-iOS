@@ -228,7 +228,6 @@
     
     AGVideoBuffer *firstRemote = self.remoteVideoBuffers.firstObject;
     if (firstRemote) {
-        //rotate remote
         int remoteYBufferSize = firstRemote.yStride * firstRemote.height;
         int remoteUBufferSize = firstRemote.uStride * firstRemote.height / 2;
         int remoteVBufferSize = firstRemote.vStride * firstRemote.height / 2;
@@ -236,44 +235,30 @@
         unsigned char *remoteUBuffer = [AGVideoBuffer copy:firstRemote.uBuffer size:remoteUBufferSize];
         unsigned char *remoteVBuffer = [AGVideoBuffer copy:firstRemote.vBuffer size:remoteVBufferSize];
         
-        unsigned char *rotatedRemoteYBuffer = malloc(remoteYBufferSize);
-        unsigned char *rotatedRemoteUBuffer = malloc(remoteUBufferSize);
-        unsigned char *rotatedRemoteVBuffer = malloc(remoteVBufferSize);
-        I420Rotate(remoteYBuffer, firstRemote.yStride,
-                   remoteUBuffer, firstRemote.uStride,
-                   remoteVBuffer, firstRemote.vStride,
-                   rotatedRemoteYBuffer, firstRemote.height,
-                   rotatedRemoteUBuffer, firstRemote.height/2,
-                   rotatedRemoteVBuffer, firstRemote.height/2,
-                   firstRemote.width, firstRemote.height, firstRemote.rotation);
-        
         //merge local to remote
         I420Scale(rotatedLocalYBuffer, self.localVideoBuffer.height,
                   rotatedLocalUBuffer, self.localVideoBuffer.height/2,
                   rotatedLocalVBuffer, self.localVideoBuffer.height/2,
                   self.localVideoBuffer.height, self.localVideoBuffer.width,
-                  rotatedRemoteYBuffer, firstRemote.height,
-                  rotatedRemoteUBuffer, firstRemote.height/2,
-                  rotatedRemoteVBuffer, firstRemote.height/2,
+                  remoteYBuffer, firstRemote.height,
+                  remoteUBuffer, firstRemote.height/2,
+                  remoteVBuffer, firstRemote.height/2,
                   firstRemote.height/3, firstRemote.width/3,
                   kFilterNone);
+        
+        //push
+        int dataLength = remoteYBufferSize + remoteUBufferSize + remoteVBufferSize;
+        unsigned char *yuvData = malloc(dataLength);
+        memcpy(yuvData, remoteYBuffer, remoteYBufferSize);
+        memcpy(yuvData + remoteYBufferSize, remoteUBuffer, remoteUBufferSize);
+        memcpy(yuvData + remoteYBufferSize + remoteUBufferSize, remoteVBuffer, remoteVBufferSize);
+        
+        [self pushVideoYUVData:yuvData dataLength:dataLength];
         
         free(remoteYBuffer);
         free(remoteUBuffer);
         free(remoteVBuffer);
         
-        //push
-        int dataLength = remoteYBufferSize + remoteUBufferSize + remoteVBufferSize;
-        unsigned char *yuvData = malloc(dataLength);
-        memcpy(yuvData, rotatedRemoteYBuffer, remoteYBufferSize);
-        memcpy(yuvData + remoteYBufferSize, rotatedRemoteUBuffer, remoteUBufferSize);
-        memcpy(yuvData + remoteYBufferSize + remoteUBufferSize, rotatedRemoteVBuffer, remoteVBufferSize);
-        
-        [self pushVideoYUVData:yuvData dataLength:dataLength];
-        
-        free(rotatedRemoteYBuffer);
-        free(rotatedRemoteUBuffer);
-        free(rotatedRemoteVBuffer);
         free(yuvData);
     } else {
         //push
